@@ -20,7 +20,7 @@ from .exceptions import (
     ProfileNotFoundError,
     RateLimitError,
 )
-from .models import MediaItem, Post, PostsPage, Profile
+from .models import Highlight, HighlightItem, MediaItem, Post, PostsPage, Profile
 from .proxy import ProxyRotator
 from .rate_limiter import RateLimiter
 
@@ -41,6 +41,8 @@ __all__ = [
     "Post",
     "PostsPage",
     "MediaItem",
+    "Highlight",
+    "HighlightItem",
     # Exceptions
     "IgdlError",
     "ProfileNotFoundError",

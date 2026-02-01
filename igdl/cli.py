@@ -12,7 +12,12 @@ from .behavior import BehaviorSimulator
 from .client import InstagramClient
 from .config import Config
 from .downloader import Downloader
-from .exceptions import IgdlError, PrivateProfileError, ProfileNotFoundError
+from .exceptions import (
+    AuthenticationError,
+    IgdlError,
+    PrivateProfileError,
+    ProfileNotFoundError,
+)
 from .proxy import ProxyRotator
 from .rate_limiter import RateLimiter
 
@@ -106,6 +111,12 @@ so you can access the original post at: instagram.com/p/ABC123def/
         default=None,
         metavar="FILE",
         help="Cookies file for authenticated access (Netscape format, e.g. from browser extension)",
+    )
+
+    parser.add_argument(
+        "--highlights",
+        action="store_true",
+        help="Download highlight reels (requires --cookies)",
     )
 
     parser.add_argument(
@@ -229,12 +240,26 @@ def main(argv: list[str] | None = None) -> int:
                 except ProfileNotFoundError:
                     console.print(f"[red]Profile not found: {username}[/red]")
                     has_errors = True
+                    continue
                 except PrivateProfileError:
                     console.print(f"[yellow]Profile is private: {username}[/yellow]")
                     has_errors = True
+                    continue
                 except IgdlError as e:
                     console.print(f"[red]Error: {e}[/red]")
                     has_errors = True
+                    continue
+
+                # Download highlights if requested
+                if args.highlights:
+                    try:
+                        downloader.download_highlights(username)
+                    except AuthenticationError as e:
+                        console.print(f"[red]{e}[/red]")
+                        has_errors = True
+                    except IgdlError as e:
+                        console.print(f"[red]Highlights error: {e}[/red]")
+                        has_errors = True
 
             return 1 if has_errors else 0
 

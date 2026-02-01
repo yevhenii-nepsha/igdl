@@ -29,6 +29,12 @@ class BehaviorSimulator:
     BREAK_DURATION_MIN: float = 10.0
     BREAK_DURATION_MAX: float = 30.0
 
+    # Highlight viewing delays (simulates tapping through highlights)
+    HIGHLIGHT_TRAY_DELAY_MIN: float = 1.5
+    HIGHLIGHT_TRAY_DELAY_MAX: float = 4.0
+    HIGHLIGHT_SWITCH_DELAY_MIN: float = 2.0
+    HIGHLIGHT_SWITCH_DELAY_MAX: float = 5.0
+
     # Aggressive mode (with proxy) - minimal delays
     AGGRESSIVE_PAGE_DELAY: float = 0.1
     AGGRESSIVE_CAROUSEL_DELAY: float = 0.05
@@ -57,6 +63,22 @@ class BehaviorSimulator:
             time.sleep(self.AGGRESSIVE_CAROUSEL_DELAY)
         else:
             delay = random.uniform(self.CAROUSEL_DELAY_MIN, self.CAROUSEL_DELAY_MAX)
+            time.sleep(delay)
+
+    def highlight_tray_delay(self) -> None:
+        """Delay before fetching highlights tray (simulates scrolling to highlights row)."""
+        if self._has_proxy:
+            time.sleep(self.AGGRESSIVE_PAGE_DELAY)
+        else:
+            delay = random.uniform(self.HIGHLIGHT_TRAY_DELAY_MIN, self.HIGHLIGHT_TRAY_DELAY_MAX)
+            time.sleep(delay)
+
+    def highlight_switch_delay(self) -> None:
+        """Delay between viewing different highlights (simulates tapping next highlight)."""
+        if self._has_proxy:
+            time.sleep(self.AGGRESSIVE_PAGE_DELAY)
+        else:
+            delay = random.uniform(self.HIGHLIGHT_SWITCH_DELAY_MIN, self.HIGHLIGHT_SWITCH_DELAY_MAX)
             time.sleep(delay)
 
     def record_post_processed(self) -> None:

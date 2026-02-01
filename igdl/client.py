@@ -14,12 +14,13 @@ from rich.console import Console
 from .behavior import BehaviorSimulator
 from .exceptions import (
     ApiError,
+    AuthenticationError,
     DownloadError,
     PrivateProfileError,
     ProfileNotFoundError,
     RateLimitError,
 )
-from .models import Post, PostsPage, Profile
+from .models import Highlight, HighlightItem, Post, PostsPage, Profile
 from .proxy import ProxyRotator
 from .rate_limiter import RateLimiter
 
@@ -417,6 +418,69 @@ class InstagramClient:
                 break
 
             cursor = page.end_cursor
+
+    def _require_cookies(self, feature: str) -> None:
+        """Raise AuthenticationError if no cookies are loaded."""
+        if not self.cookies_file:
+            raise AuthenticationError(f"{feature} requires cookies (use --cookies)")
+
+    def get_highlights(self, user_id: str) -> list[Highlight]:
+        """Fetch list of highlight reels for a user.
+
+        Requires authentication (cookies). Returns highlights with metadata
+        only — items must be fetched separately via get_highlight_items().
+
+        Args:
+            user_id: Instagram user ID.
+
+        Returns:
+            List of Highlight objects (without items populated).
+
+        Raises:
+            AuthenticationError: If no cookies are loaded.
+        """
+        self._require_cookies("Highlights")
+        url = f"{self.BASE_URL}/api/v1/highlights/{user_id}/highlights_tray/"
+
+        response = self._request("GET", url)
+
+        try:
+            data = response.json()
+        except json.JSONDecodeError as e:
+            raise ApiError(response.status_code, "Invalid JSON in highlights tray") from e
+
+        tray = data.get("tray", [])
+        return [Highlight.from_tray_item(item) for item in tray]
+
+    def get_highlight_items(self, highlight_id: str) -> list[HighlightItem]:
+        """Fetch media items for a specific highlight reel.
+
+        Requires authentication (cookies). Requests items for a single
+        highlight reel and returns them sorted by timestamp.
+
+        Args:
+            highlight_id: Numeric highlight ID (without ``highlight:`` prefix).
+
+        Returns:
+            List of HighlightItem objects with best-quality URLs.
+
+        Raises:
+            AuthenticationError: If no cookies are loaded.
+        """
+        self._require_cookies("Highlights")
+        url = f"{self.BASE_URL}/api/v1/feed/reels_media/"
+        reel_id = f"highlight:{highlight_id}"
+
+        response = self._request("GET", url, params={"reel_ids": reel_id})
+
+        try:
+            data = response.json()
+        except json.JSONDecodeError as e:
+            raise ApiError(response.status_code, "Invalid JSON in highlight items") from e
+
+        reel_data = data.get("reels", {}).get(reel_id, {})
+        raw_items = reel_data.get("items", [])
+        return [HighlightItem.from_rest_item(item) for item in raw_items]
 
     def download_media(
         self,
