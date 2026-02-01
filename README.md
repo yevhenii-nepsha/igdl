@@ -74,14 +74,41 @@ igdl username -o ./my-folder
 igdl username --proxy "http://user:pass@host:port"
 ```
 
-### Download 18+ profile
+### Download highlights
 
-Age-restricted profiles require your Instagram cookies:
+Highlight reels require your Instagram cookies:
 
 1. Install [Get cookies.txt](https://chrome.google.com/webstore/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc) browser extension
 2. Log into Instagram
 3. Export cookies to a file
 4. Run:
+
+```bash
+igdl username --highlights --cookies cookies.txt
+```
+
+Each highlight is saved in its own directory named after the highlight title:
+
+```
+./username/highlights/
+  sea-2025/
+    username_3012345678901234567.jpg
+    username_3012345678901234568.mp4
+  travel/
+    username_3012345678901234569.jpg
+```
+
+Emoji and unicode titles are preserved (`🔗`, `море`, etc.).
+
+### Download posts and highlights together
+
+```bash
+igdl username -n 50 --highlights --cookies cookies.txt
+```
+
+### Download 18+ profile
+
+Age-restricted profiles require your Instagram cookies (same setup as highlights):
 
 ```bash
 igdl username --cookies cookies.txt
@@ -98,7 +125,8 @@ igdl username [OPTIONS]
   -q, --quiet             Show errors only
   --proxy URL             Use proxy
   --proxy-file FILE       Use rotating proxies from file
-  --cookies FILE          Use cookies for 18+ profiles
+  --cookies FILE          Use cookies for highlights and 18+ profiles
+  --highlights            Download highlight reels (requires --cookies)
   --init-config           Create config file
   -V, --version           Show version
 ```
@@ -113,9 +141,14 @@ Files are saved in a folder named after the username:
   username_XYZ789.mp4        # Video
   username_DEF456_1.jpg      # Carousel photo 1
   username_DEF456_2.jpg      # Carousel photo 2
+  highlights/                # Highlight reels (--highlights)
+    sea-2025/
+      username_3012345678901234567.jpg
+    travel/
+      username_3012345678901234569.mp4
 ```
 
-Each filename contains the username and shortcode. Find the original post at:
+Post filenames contain the shortcode. Find the original post at:
 `instagram.com/p/ABC123/`
 
 ## Troubleshooting
@@ -153,7 +186,7 @@ igdl automatically uses aria2c when available. No extra configuration needed.
 ## Limitations
 
 - Public profiles only (or 18+ with cookies)
-- No stories or reels
+- No stories or reels (highlights are supported)
 - No private profiles
 
 ---
@@ -176,7 +209,7 @@ igdl/
 ├── __main__.py      # python -m igdl entry
 ├── cli.py           # CLI argument parsing
 ├── client.py        # Instagram API client
-├── models.py        # Data classes (Profile, Post, MediaItem)
+├── models.py        # Data classes (Profile, Post, MediaItem, Highlight)
 ├── downloader.py    # Download orchestration
 ├── aria2.py         # Aria2c batch downloader
 ├── rate_limiter.py  # Sliding window rate limiting
@@ -210,6 +243,11 @@ with InstagramClient(proxy_rotator=proxy) as client:
 with InstagramClient(cookies_file=Path("cookies.txt")) as client:
     downloader = Downloader(client)
     downloader.download_profile("restricted_username")
+
+# Download highlights (requires cookies)
+with InstagramClient(cookies_file=Path("cookies.txt")) as client:
+    downloader = Downloader(client, output_dir=Path("./downloads"))
+    downloader.download_highlights("username")
 ```
 
 ### Rate Limiting
